@@ -1,5 +1,5 @@
+
 from django.db import models
-from django.utils import timezone
 
 from rest_framework import serializers
 
@@ -29,7 +29,7 @@ class ParkingTransaction (models.Model):
     id = models.AutoField(primary_key=True)
     parkingLotID = models.CharField(max_length=50)
     carnum = models.CharField(max_length=50)
-    timeStartParking = models.DateTimeField(default=timezone.now())
+    timeStartParking = models.DateTimeField()
     timeEndParking = models.DateTimeField(null=True, blank=True)
     parkingLength = models.IntegerField(default=0)
     paid = models.IntegerField(default=0)

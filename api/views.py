@@ -1,14 +1,14 @@
+from django.utils import timezone
 import json
 
 from django.http import HttpResponse
-from django.utils import timezone
 from exponent_server_sdk import PushClient
 from exponent_server_sdk import PushMessage
 from exponent_server_sdk import PushServerError
 from rest_framework.decorators import api_view
 from rest_framework.renderers import JSONRenderer
 
-from api.models import ParkingTransaction, TransactionSerializer
+from api.models import *
 import api.config as conf
 
 
@@ -42,9 +42,9 @@ def car_start_parking(request):
         pass
     
     if obj is not None:
-        trans = ParkingTransaction( parkingLotID=obj['parkingLotNum'], carnum=obj['carNum'] )
-        send_push_message( conf.TOKEN, msg_with_data( '{"orderID":"%s"}'%(str(trans.id)) ) )
+        trans = ParkingTransaction( parkingLotID=obj['parkingLotNum'], carnum=obj['carNum'], timeStartParking=timezone.now() )
         trans.save()
+        send_push_message( conf.TOKEN, msg_with_data('{"orderID":"%d"}' % (trans.id)) )
         return HttpResponse( obj_to_json(trans) )
     else:
         return HttpResponse( msg_to_json('no car parking!') )
@@ -62,6 +62,9 @@ def car_leave (request):
         record = ParkingTransaction.objects.filter(parkingLotID=obj['parkingLotNum']).order_by('timeStartParking').reverse()[0]
         record.timeEndParking = timezone.now()
         record.save()
+        
+        carpark = CarPark.objects.get(id=record.parkingLotID)
+        send_push_message(conf.TOKEN, msg_with_data('{"transactionID":"%s", "empty carpark":"%s"}' % (record.id, carpark.id)))
         return HttpResponse(msg_to_json('update successfully'))
     else:
         return HttpResponse(msg_to_json('no such parkinglot id!'))
@@ -113,7 +116,8 @@ def msg_with_data (jsonObj):
 # want to use, or simply pass in a `PushMessage` object.
 def send_push_message(token, message, extra=None):
     try:
-        PushClient().publish( PushMessage(to=token, body=message, data=extra) )
+        a = PushClient().publish( PushMessage(to=token, body=message, data=extra) )
+        print(a)
     except PushServerError as exc:
         print(exc)
         pass
