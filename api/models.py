@@ -8,7 +8,7 @@ class CarToken (models.Model):
     class Meta:
         unique_together = (('carnum', 'token'))
     
-    carnum = models.CharField(max_length=50)
+    carnum = models.CharField(max_length=50, primary_key=True)
     token = models.CharField(max_length=50)
 
 

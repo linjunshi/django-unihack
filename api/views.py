@@ -44,7 +44,9 @@ def car_start_parking(request):
     if obj is not None:
         trans = ParkingTransaction( parkingLotID=obj['parkingLotNum'], carnum=obj['carNum'], timeStartParking=timezone.now() )
         trans.save()
-        send_push_message( conf.TOKEN, msg_with_data('{"orderID":"%d"}' % (trans.id)) )
+        carToken = CarToken.objects.get( carnum=obj['carNum'] )
+        message = msg_with_data('{"message":"parking", "orderID":"%d"}' % (trans.id))
+        send_push_message(carToken.token, message=message, extra=message)
         return HttpResponse( obj_to_json(trans) )
     else:
         return HttpResponse( msg_to_json('no car parking!') )
@@ -64,7 +66,9 @@ def car_leave (request):
         record.save()
         
         carpark = CarPark.objects.get(id=record.parkingLotID)
-        send_push_message(conf.TOKEN, msg_with_data('{"transactionID":"%s", "empty carpark":"%s"}' % (record.id, carpark.id)))
+        carToken = CarToken.objects.get(carnum=obj['carNum'])
+        message = msg_with_data('{"message":"leaving", "transactionID":"%s", "empty carpark":"%s"}' % (record.id, carpark.id))
+        send_push_message(carToken.token, message=message, extra=message)
         return HttpResponse(msg_to_json('update successfully'))
     else:
         return HttpResponse(msg_to_json('no such parkinglot id!'))
@@ -78,6 +82,7 @@ def pay_order(request):
     except:
         pass
     
+    print(obj)
     if obj is not None:
         order = ParkingTransaction.objects.get(id=obj['orderNum'])
         if order is not None:
@@ -102,7 +107,7 @@ def obj_to_json (obj):
     serializer = TransactionSerializer(obj)
     decodedStr = JSONRenderer().render(serializer.data).decode()
     return msg_with_data( decodedStr )
- 
+
     
 def msg_to_json (message):
     return '{"message":"%s"}' % (message)
@@ -116,8 +121,7 @@ def msg_with_data (jsonObj):
 # want to use, or simply pass in a `PushMessage` object.
 def send_push_message(token, message, extra=None):
     try:
-        a = PushClient().publish( PushMessage(to=token, body=message, data=extra) )
-        print(a)
+        PushClient().publish( PushMessage(to=token, body=message, data=extra) )
     except PushServerError as exc:
         print(exc)
         pass
