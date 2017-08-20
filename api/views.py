@@ -68,7 +68,7 @@ def car_leave (request):
         carpark = CarPark.objects.get(id=record.parkingLotID)
         carToken = CarToken.objects.get(carnum=obj['carNum'])
         message = msg_with_data('{"message":"leaving", "transactionID":"%s", "empty carpark":"%s"}' % (record.id, carpark.id))
-        send_push_message(carToken.token, message=message, extra=message)
+        # send_push_message(carToken.token, message=message, extra=message)
         return HttpResponse(msg_to_json('update successfully'))
     else:
         return HttpResponse(msg_to_json('no such parkinglot id!'))
